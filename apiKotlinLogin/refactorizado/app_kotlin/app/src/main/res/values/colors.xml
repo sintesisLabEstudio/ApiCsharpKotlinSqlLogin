@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- CÓDIGO ANTERIOR:
+    <color name="dark_background">#121212</color>
+    <color name="dark_primary">#5C6BC0</color>
+    EXPLICACIÓN: Se reemplaza el fondo negro profundo por un gris medio más claro (#303030) y botones grises neutros (#4E4E4E).
+    -->
+
+    <!-- AGREGADO [2026-11-08 21:10]: Paleta en tonos gris claro medio y botones grises confortables -->
+    <color name="dark_background">#303030</color>
+    <color name="dark_surface">#383838</color>
+    <color name="dark_card">#424242</color>
+    <color name="dark_primary">#4E4E4E</color>
+    <color name="dark_primary_variant">#282828</color>
+    <color name="dark_on_primary">#FFFFFF</color>
+    <color name="dark_text_primary">#F5F5F5</color>
+    <color name="dark_text_secondary">#E0E0E0</color>
+</resources>

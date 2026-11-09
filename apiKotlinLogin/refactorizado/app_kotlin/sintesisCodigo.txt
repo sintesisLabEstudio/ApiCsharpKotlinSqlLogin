@@ -1,0 +1,555 @@
+================================================================================
+SÍNTESIS COMPLETA DEL CÓDIGO DEL PROYECTO (ACTUALIZADO: 2026-11-09 00:54)
+================================================================================
+=== ARCHIVO: Persona.kt
+Ruta: app/src/main/java/com/example/appapilogin/Clases/Persona.kt
+Descripción: Modelo de datos Kotlin para mapear la entidad Persona (ID, nombre, apellido, edad).
+Relación: Usado por Funciones.kt, Datos.kt, IngresarPersona.kt, IngresarUsuario.kt, EditarPersona.kt, EditarUsuario.kt y ListadoPersonas.kt.
+Código:
+package com.example.appapilogin.Clases
+// AGREGADO [2026-11-08 14:35]: Data class Persona representativa del modelo SQL
+data class Persona (
+	var idPersona : Int,      //llave primaria pk
+	var nomPersona : String, //llave primaria
+	var apePersona : String,
+	var edad : Int
+)
+=== ARCHIVO: Usuario.kt
+Ruta: app/src/main/java/com/example/appapilogin/Clases/Usuario.kt
+Descripción: Modelo de datos Kotlin para mapear la entidad Usuario (nombre de usuario, contraseña, ID persona, ID estado).
+Relación: Usado por Funciones.kt, IngresarUsuario.kt, EditarUsuario.kt y Login.kt.
+Código:
+package com.example.appapilogin.Clases
+// AGREGADO [2026-11-08 14:35]: Data class Usuario con atributos clave, idPersona e idEstado
+data class Usuario (
+	var nomUsuario : String,        //pk
+	var clave: String = "123456",
+	var idPersona : Int,            //fk
+	var idEstado : Int              //fk
+)
+=== ARCHIVO: Datos.kt
+Ruta: app/src/main/java/com/example/appapilogin/Clases/Datos.kt
+Descripción: Clase contenedora DTO para las respuestas estándar de la API (respuesta, mensaje, lista opcional de Personas).
+Relación: Usado por Funciones.kt, IngresarPersona.kt, IngresarUsuario.kt, EditarPersona.kt, EditarUsuario.kt, ListadoPersonas.kt y Login.kt.
+Código:
+package com.example.appapilogin.Clases
+// AGREGADO [2026-11-08 14:35]: DTO para desacoplar las respuestas genéricas HTTP de Retrofit
+data class Datos(
+	var respuesta : String,
+	var mensaje : String,
+	/* CÓDIGO ANTERIOR:
+	var lista: List<Persona>
+	EXPLICACIÓN: Se hace nula opcional (List<Persona>? = null) para evitar crash al deserializar respuestas sin propiedad 'lista'.
+	*/
+	var lista: List<Persona>? = null
+)
+=== ARCHIVO: DatosUsuario.kt
+Ruta: app/src/main/java/com/example/appapilogin/Clases/DatosUsuario.kt
+Descripción: Clase DTO original para la deserialización de listas de usuarios traídos con JOIN desde la API.
+Relación: Usado por Funciones.kt, EditarUsuario.kt y ListadoUsuarios.kt.
+Código:
+package com.example.appapilogin.Clases
+/* CÓDIGO ANTERIOR:
+import com.google.gson.annotations.SerializedName
+data class DatosUsuario(@SerializedName("respuesta") var respuesta : String, @SerializedName("mensaje") var mensaje : String, @SerializedName("lista") var lista: List<UsuarioTrae>? = null)
+EXPLICACIÓN: Se remueven las anotaciones @SerializedName para restaurar la estructura original limpia.
+*/
+// AGREGADO [2026-11-08 20:30]: Restauración del modelo DatosUsuario sin anotaciones @SerializedName a solicitud del usuario
+data class DatosUsuario(
+	var respuesta : String,
+	var mensaje : String,
+	var lista: List<UsuarioTrae>? = null
+)
+data class UsuarioTrae(
+	var nomUsuario : String,
+	var nombreApellido : String,
+	var edad : Int,
+	var nom_estado : String
+)
+=== ARCHIVO: RetrofitCliente.kt
+Ruta: app/src/main/java/com/example/appapilogin/Conexion/RetrofitCliente.kt
+Descripción: Objeto Singleton que configura el cliente HTTP Retrofit con la URL base y el convertidor Gson.
+Relación: Usado por todas las vistas/actividades para realizar llamadas HTTP a la API.
+Código:
+package com.example.appapilogin.Conexion
+import com.example.appapilogin.Interfaz.Funciones
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+// AGREGADO [2026-11-08 14:35]: Cliente Retrofit singleton con puerto 5017
+object RetrofitCliente {
+	// adb reverse tcp:5017 tcp:5017
+	/* CÓDIGO ANTERIOR:
+	var localhost = "192.168.56.1"
+	EXPLICACIÓN: Se usa 127.0.0.1 combinado con 'adb reverse tcp:5017 tcp:5017' para túnel USB directo o la IP de red Wi-Fi.
+	*/
+	var localhost = "127.0.0.1"
+	var puerto = "5017"
+	var ruta = Retrofit.Builder()
+		.baseUrl("http://$localhost:$puerto/Producto/")
+		.addConverterFactory(GsonConverterFactory.create())
+		.build()
+		.create(Funciones::class.java)
+}
+=== ARCHIVO: Funciones.kt
+Ruta: app/src/main/java/com/example/appapilogin/Interfaz/Funciones.kt
+Descripción: Interfaz Retrofit que define las firmas de las funciones HTTP GET, POST y DELETE suspendibles.
+Relación: Implementada por RetrofitCliente.kt y llamada desde las actividades de la aplicación.
+Código:
+package com.example.appapilogin.Interfaz
+import com.example.appapilogin.Clases.Datos
+import com.example.appapilogin.Clases.DatosUsuario
+import com.example.appapilogin.Clases.Persona
+import com.example.appapilogin.Clases.Usuario
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.HTTP
+import retrofit2.http.POST
+import retrofit2.http.Query
+// AGREGADO [2026-11-08 14:35]: Interfaz funcional con corrutinas suspendibles para consumo de endpoints
+interface Funciones {
+	@GET("ListadoPersonas")
+	suspend fun ListadoPersonas() : Response<Datos>
+	@GET("ListadoUsuario")
+	suspend fun ListadoUsuario() : Response<DatosUsuario>
+	@POST("InsertarPersona")
+	suspend fun InsertarPersona(@Body persona: Persona): Response<Datos>
+	@POST("InsertarUsuario")
+	suspend fun InsertarUsuario(@Body usuario: Usuario): Response<Datos>
+	@POST("Login")
+	suspend fun Login(@Body usuario: Usuario): Response<Datos>
+	@POST("EditarPersona")
+	suspend fun EditarPersona(@Body persona: Persona): Response<Datos>
+	@HTTP(method = "DELETE", path = "EliminarPersona", hasBody = true)
+	suspend fun EliminarPersona(@Body persona: Persona): Response<Datos>
+	@POST("EditarUsuario")
+	suspend fun EditarUsuario(@Body usuario: Usuario, @Query("oldNomUsuario") oldNomUsuario: String? = null): Response<Datos>
+	@POST("EliminarUsuario")
+	suspend fun EliminarUsuario(@Body usuario: Usuario): Response<Datos>
+}
+=== ARCHIVO: MainActivity.kt
+Ruta: app/src/main/java/com/example/appapilogin/MainActivity.kt
+Descripción: Actividad principal que sirve como menú de navegación hacia las distintas opciones del sistema.
+Relación: Conecta con ListadoPersonas, ListadoUsuarios, IngresarPersona, IngresarUsuario, EditarPersona, EditarUsuario y Login.
+Código:
+package com.example.appapilogin
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Button
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+// AGREGADO [2026-11-08 20:55]: Activar modo oscuro con gris atenuado para confort y vista delicada
+class MainActivity : AppCompatActivity() {
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+		enableEdgeToEdge()
+		setContentView(R.layout.activity_main)
+		ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+			val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+			insets
+		}
+		val btnListadoPersonas = findViewById<Button>(R.id.btnPersonas)
+		val btnListadoUsuarios = findViewById<Button>(R.id.btnUsuarios)
+		val btnInsertarPersonas = findViewById<Button>(R.id.btnIngresarPersona)
+		val btnInsertarUsuarios = findViewById<Button>(R.id.btnIngresarUsuario)
+		val btnEditarPersonaMain = findViewById<Button>(R.id.btnEditarPersonaMain)
+		val btnEditarUsuarioMain = findViewById<Button>(R.id.btnEditarUsuarioMain)
+		val btnLogin = findViewById<Button>(R.id.btnLogin)
+		btnListadoPersonas.setOnClickListener { startActivity(Intent(this, ListadoPersonas::class.java)); finish() }
+		btnListadoUsuarios.setOnClickListener { startActivity(Intent(this, ListadoUsuarios::class.java)); finish() }
+		btnInsertarPersonas.setOnClickListener { startActivity(Intent(this, IngresarPersona::class.java)); finish() }
+		btnInsertarUsuarios.setOnClickListener { startActivity(Intent(this, IngresarUsuario::class.java)); finish() }
+		btnEditarPersonaMain?.setOnClickListener { startActivity(Intent(this, EditarPersona::class.java)); finish() }
+		btnEditarUsuarioMain?.setOnClickListener { startActivity(Intent(this, EditarUsuario::class.java)); finish() }
+		btnLogin.setOnClickListener { startActivity(Intent(this, Login::class.java)); finish() }
+	}
+}
+=== ARCHIVO: IngresarUsuario.kt
+Ruta: app/src/main/java/com/example/appapilogin/IngresarUsuario.kt
+Descripción: Formulario con Spinner para seleccionar la persona asociada y registrar nuevos usuarios.
+Relación: Conecta con MainActivity.kt, Persona.kt, Usuario.kt y RetrofitCliente.kt.
+Código:
+package com.example.appapilogin
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Spinner
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.example.appapilogin.Clases.Datos
+import com.example.appapilogin.Clases.Persona
+import com.example.appapilogin.Clases.Usuario
+import com.example.appapilogin.Conexion.RetrofitCliente
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+// AGREGADO [2026-11-08 23:32]: Formulario con Spinner de personas para registrar nuevos usuarios
+class IngresarUsuario : AppCompatActivity() {
+	private var listaPersonasCache: List<Persona> = emptyList()
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		enableEdgeToEdge()
+		setContentView(R.layout.activity_ingresar_usuario)
+		ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+			val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+			insets
+		}
+		val btnVolver = findViewById<Button>(R.id.btnIUVolver)
+		val btnGuardar = findViewById<Button>(R.id.btnGuardarUsuario)
+		val spinnerPersonas = findViewById<Spinner>(R.id.spinnerPersonasIngresarUsr)
+		val txtNomUsuario = findViewById<EditText>(R.id.txtNomUsuario)
+		val txtClave = findViewById<EditText>(R.id.txtClave)
+		val txtIdPersona = findViewById<EditText>(R.id.txtIdPersona)
+		val txtIdEstado = findViewById<EditText>(R.id.txtIdEstado)
+		cargarSpinnerPersonas(spinnerPersonas, txtIdPersona)
+		btnVolver.setOnClickListener { startActivity(Intent(this, MainActivity::class.java)); finish() }
+		btnGuardar.setOnClickListener {
+			val usr = txtNomUsuario.text.toString().trim()
+			val pass = txtClave.text.toString().trim()
+			val idPer = txtIdPersona.text.toString().trim()
+			val idEst = txtIdEstado.text.toString().trim()
+			if (usr.isEmpty() || idPer.isEmpty() || idEst.isEmpty()) { Toast.makeText(this, "Complete los campos obligatorios", Toast.LENGTH_SHORT).show() } else { guardarUsuario(usr, pass, idPer.toInt(), idEst.toInt()) }
+		}
+	}
+	private fun cargarSpinnerPersonas(spinner: Spinner, txtIdPer: EditText) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val llamada = RetrofitCliente.ruta.ListadoPersonas()
+				if (llamada.isSuccessful) {
+					val body = llamada.body()
+					listaPersonasCache = body?.lista ?: emptyList()
+					val nombresList = listaPersonasCache.map { "${it.idPersona} - ${it.nomPersona} ${it.apePersona}" }
+					withContext(Dispatchers.Main) {
+						val adapter = ArrayAdapter(this@IngresarUsuario, android.R.layout.simple_spinner_item, nombresList)
+						adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+						spinner.adapter = adapter
+						spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+							override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+								if (position < listaPersonasCache.size) {
+									val personaSel = listaPersonasCache[position]
+									txtIdPer.setText(personaSel.idPersona.toString())
+								}
+							}
+							override fun onNothingSelected(parent: AdapterView<*>) {}
+						}
+					}
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@IngresarUsuario, "Error al cargar personas: ${ex.message}", Toast.LENGTH_SHORT).show() } }
+		}
+	}
+	private fun guardarUsuario(usuario: String, clave: String, idPersona: Int, idEstado: Int) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val nuevoUsr = Usuario(usuario, if (clave.isEmpty()) "123456" else clave, idPersona, idEstado)
+				val llamada = RetrofitCliente.ruta.InsertarUsuario(nuevoUsr)
+				withContext(Dispatchers.Main) {
+					if (llamada.isSuccessful) {
+						val body: Datos? = llamada.body()
+						Toast.makeText(this@IngresarUsuario, "${body?.respuesta}: ${body?.mensaje}", Toast.LENGTH_LONG).show()
+					} else {
+						Toast.makeText(this@IngresarUsuario, "Error del servidor: ${llamada.code()}", Toast.LENGTH_SHORT).show()
+					}
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@IngresarUsuario, "Error de conexión: ${ex.message}", Toast.LENGTH_LONG).show() } }
+		}
+	}
+}
+=== ARCHIVO: EditarPersona.kt
+Ruta: app/src/main/java/com/example/appapilogin/EditarPersona.kt
+Descripción: Formulario con Spinner dinámico para seleccionar, editar y eliminar personas de la base de datos vía API.
+Relación: Conecta con MainActivity.kt, Persona.kt y RetrofitCliente.kt.
+Código:
+package com.example.appapilogin
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Spinner
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.example.appapilogin.Clases.Datos
+import com.example.appapilogin.Clases.Persona
+import com.example.appapilogin.Conexion.RetrofitCliente
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+// AGREGADO [2026-11-08 21:18]: Actividad para editar y eliminar registros de personas
+class EditarPersona : AppCompatActivity() {
+	private var listaPersonasCache: List<Persona> = emptyList()
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		enableEdgeToEdge()
+		setContentView(R.layout.activity_editar_persona)
+		ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+			val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+			insets
+		}
+		val btnVolver = findViewById<Button>(R.id.btnVolverEditPersona)
+		val btnEditar = findViewById<Button>(R.id.btnEditarPersona)
+		val btnEliminar = findViewById<Button>(R.id.btnEliminarPersona)
+		val btnLimpiar = findViewById<Button>(R.id.btnLimpiarEditPersona)
+		val spinnerPersonas = findViewById<Spinner>(R.id.spinnerPersonasEdit)
+		val txtIdPersona = findViewById<EditText>(R.id.txtIdPersonaEdit)
+		val txtNombres = findViewById<EditText>(R.id.txtNombresEdit)
+		val txtApellidos = findViewById<EditText>(R.id.txtApellidosEdit)
+		val txtEdad = findViewById<EditText>(R.id.txtEdadEdit)
+		cargarSpinnerPersonas(spinnerPersonas, txtIdPersona, txtNombres, txtApellidos, txtEdad)
+		btnVolver.setOnClickListener { startActivity(Intent(this, MainActivity::class.java)); finish() }
+		btnLimpiar.setOnClickListener { txtIdPersona.text.clear(); txtNombres.text.clear(); txtApellidos.text.clear(); txtEdad.text.clear() }
+		btnEditar.setOnClickListener {
+			val idStr = txtIdPersona.text.toString().trim()
+			val nom = txtNombres.text.toString().trim()
+			val ape = txtApellidos.text.toString().trim()
+			val edadStr = txtEdad.text.toString().trim()
+			if (idStr.isEmpty() || nom.isEmpty() || ape.isEmpty() || edadStr.isEmpty()) { Toast.makeText(this, "Complete todos los campos para editar", Toast.LENGTH_SHORT).show() } else { ejecutarEditarPersona(idStr.toInt(), nom, ape, edadStr.toInt(), spinnerPersonas, txtIdPersona, txtNombres, txtApellidos, txtEdad) }
+		}
+		btnEliminar.setOnClickListener {
+			val idStr = txtIdPersona.text.toString().trim()
+			if (idStr.isEmpty()) { Toast.makeText(this, "Ingrese el ID de la persona a eliminar", Toast.LENGTH_SHORT).show() } else { ejecutarEliminarPersona(idStr.toInt(), spinnerPersonas, txtIdPersona, txtNombres, txtApellidos, txtEdad) }
+		}
+	}
+	private fun cargarSpinnerPersonas(spinner: Spinner, txtId: EditText, txtNom: EditText, txtApe: EditText, txtEdad: EditText) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val llamada = RetrofitCliente.ruta.ListadoPersonas()
+				if (llamada.isSuccessful) {
+					val body = llamada.body()
+					listaPersonasCache = body?.lista ?: emptyList()
+					val nombresList = listaPersonasCache.map { "${it.idPersona} - ${it.nomPersona} ${it.apePersona}" }
+					withContext(Dispatchers.Main) {
+						val adapter = ArrayAdapter(this@EditarPersona, android.R.layout.simple_spinner_item, nombresList)
+						adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+						spinner.adapter = adapter
+						spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+							override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+								if (position < listaPersonasCache.size) {
+									val seleccionada = listaPersonasCache[position]
+									txtId.setText(seleccionada.idPersona.toString())
+									txtNom.setText(seleccionada.nomPersona)
+									txtApe.setText(seleccionada.apePersona)
+									txtEdad.setText(seleccionada.edad.toString())
+								}
+							}
+							override fun onNothingSelected(parent: AdapterView<*>) {}
+						}
+					}
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@EditarPersona, "Error al cargar personas: ${ex.message}", Toast.LENGTH_SHORT).show() } }
+		}
+	}
+	private fun ejecutarEditarPersona(id: Int, nombres: String, apellidos: String, edad: Int, spinner: Spinner, txtId: EditText, txtNom: EditText, txtApe: EditText, txtEdad: EditText) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val persona = Persona(id, nombres, apellidos, edad)
+				val respuesta = RetrofitCliente.ruta.EditarPersona(persona)
+				withContext(Dispatchers.Main) {
+					if (respuesta.isSuccessful) { Toast.makeText(this@EditarPersona, "${respuesta.body()?.respuesta}: ${respuesta.body()?.mensaje}", Toast.LENGTH_LONG).show(); cargarSpinnerPersonas(spinner, txtId, txtNom, txtApe, txtEdad) } else { Toast.makeText(this@EditarPersona, "Error del servidor: ${respuesta.code()}", Toast.LENGTH_SHORT).show() }
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@EditarPersona, "Error de red: ${ex.message}", Toast.LENGTH_LONG).show() } }
+		}
+	}
+	private fun ejecutarEliminarPersona(id: Int, spinner: Spinner, txtId: EditText, txtNom: EditText, txtApe: EditText, txtEdad: EditText) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val persona = Persona(id, "", "", 0)
+				val respuesta = RetrofitCliente.ruta.EliminarPersona(persona)
+				withContext(Dispatchers.Main) {
+					if (respuesta.isSuccessful) { Toast.makeText(this@EditarPersona, "${respuesta.body()?.respuesta}: ${respuesta.body()?.mensaje}", Toast.LENGTH_LONG).show(); txtId.text.clear(); txtNom.text.clear(); txtApe.text.clear(); txtEdad.text.clear(); cargarSpinnerPersonas(spinner, txtId, txtNom, txtApe, txtEdad) } else { Toast.makeText(this@EditarPersona, "Error del servidor: ${respuesta.code()}", Toast.LENGTH_SHORT).show() }
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@EditarPersona, "Error de red: ${ex.message}", Toast.LENGTH_LONG).show() } }
+		}
+	}
+}
+=== ARCHIVO: EditarUsuario.kt
+Ruta: app/src/main/java/com/example/appapilogin/EditarUsuario.kt
+Descripción: Formulario con doble Spinner (Personas y Usuarios) para editar o eliminar usuarios permitiendo modificar el nombre con un límite estricto de 10 caracteres.
+Relación: Conecta con MainActivity.kt, Usuario.kt, DatosUsuario.kt y RetrofitCliente.kt.
+Código:
+package com.example.appapilogin
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Spinner
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.example.appapilogin.Clases.Datos
+import com.example.appapilogin.Clases.Persona
+import com.example.appapilogin.Clases.Usuario
+import com.example.appapilogin.Clases.UsuarioTrae
+import com.example.appapilogin.Conexion.RetrofitCliente
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+// AGREGADO [2026-11-08 21:18]: Actividad con doble Spinner dependiente para editar y eliminar usuarios
+class EditarUsuario : AppCompatActivity() {
+	private var listaPersonasCache: List<Persona> = emptyList()
+	private var listaUsuariosCache: List<UsuarioTrae> = emptyList()
+	private var listaUsuariosFiltrados: List<UsuarioTrae> = emptyList()
+	private var usuarioOriginalSeleccionado: String = ""
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		enableEdgeToEdge()
+		setContentView(R.layout.activity_editar_usuario)
+		ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+			val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+			insets
+		}
+		val btnVolver = findViewById<Button>(R.id.btnVolverEditUsuario)
+		val btnEditar = findViewById<Button>(R.id.btnEditarUsuario)
+		val btnEliminar = findViewById<Button>(R.id.btnEliminarUsuario)
+		val btnLimpiar = findViewById<Button>(R.id.btnLimpiarEditUsuario)
+		val spinnerPersonas = findViewById<Spinner>(R.id.spinnerPersonasUsrEdit)
+		val spinnerUsuarios = findViewById<Spinner>(R.id.spinnerUsuariosUsrEdit)
+		val txtNomUsuario = findViewById<EditText>(R.id.txtNomUsuarioEdit)
+		val txtClave = findViewById<EditText>(R.id.txtClaveEdit)
+		val txtIdPersona = findViewById<EditText>(R.id.txtIdPersonaUsrEdit)
+		val txtIdEstado = findViewById<EditText>(R.id.txtIdEstadoUsrEdit)
+		cargarSpinners(spinnerPersonas, spinnerUsuarios, txtNomUsuario, txtClave, txtIdPersona, txtIdEstado)
+		btnVolver.setOnClickListener { startActivity(Intent(this, MainActivity::class.java)); finish() }
+		btnLimpiar.setOnClickListener { txtNomUsuario.text.clear(); txtClave.text.clear(); txtIdPersona.text.clear(); txtIdEstado.text.clear() }
+		btnEditar.setOnClickListener {
+			val usr = txtNomUsuario.text.toString().trim()
+			val pass = txtClave.text.toString().trim()
+			val idPerStr = txtIdPersona.text.toString().trim()
+			val idEstStr = txtIdEstado.text.toString().trim()
+			if (usr.isEmpty() || idPerStr.isEmpty() || idEstStr.isEmpty()) { Toast.makeText(this, "Debe ingresar usuario, ID persona e ID estado", Toast.LENGTH_SHORT).show() } else { val oldUsr = if (usuarioOriginalSeleccionado.isEmpty()) usr else usuarioOriginalSeleccionado; val claveFinal = if (pass.isEmpty()) "123456" else pass; ejecutarEditarUsuario(usr, claveFinal, idPerStr.toInt(), idEstStr.toInt(), oldUsr, spinnerPersonas, spinnerUsuarios, txtNomUsuario, txtClave, txtIdPersona, txtIdEstado) }
+		}
+		btnEliminar.setOnClickListener {
+			val usr = txtNomUsuario.text.toString().trim()
+			if (usr.isEmpty()) { Toast.makeText(this, "Ingrese el nombre de usuario a eliminar", Toast.LENGTH_SHORT).show() } else { ejecutarEliminarUsuario(usr, spinnerPersonas, spinnerUsuarios, txtNomUsuario, txtClave, txtIdPersona, txtIdEstado) }
+		}
+	}
+	private fun cargarSpinners(spinnerPer: Spinner, spinnerUsr: Spinner, txtUsr: EditText, txtPass: EditText, txtPer: EditText, txtEst: EditText) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val llamadaPer = RetrofitCliente.ruta.ListadoPersonas()
+				val llamadaUsr = RetrofitCliente.ruta.ListadoUsuario()
+				if (llamadaPer.isSuccessful && llamadaUsr.isSuccessful) {
+					listaPersonasCache = llamadaPer.body()?.lista ?: emptyList()
+					listaUsuariosCache = llamadaUsr.body()?.lista ?: emptyList()
+					val nombresPerList = listaPersonasCache.map { "${it.idPersona} - ${it.nomPersona} ${it.apePersona}" }
+					withContext(Dispatchers.Main) {
+						val adapterPer = ArrayAdapter(this@EditarUsuario, android.R.layout.simple_spinner_item, nombresPerList)
+						adapterPer.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+						spinnerPer.adapter = adapterPer
+						spinnerPer.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+							override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+								if (position < listaPersonasCache.size) {
+									val personaSel = listaPersonasCache[position]
+									txtPer.setText(personaSel.idPersona.toString())
+									val nombreCompleto = "${personaSel.nomPersona} ${personaSel.apePersona}".trim()
+									listaUsuariosFiltrados = listaUsuariosCache.filter { it.nombreApellido.equals(nombreCompleto, ignoreCase = true) }
+									val nombresUsrList = listaUsuariosFiltrados.map { it.nomUsuario }
+									val adapterUsr = ArrayAdapter(this@EditarUsuario, android.R.layout.simple_spinner_item, nombresUsrList)
+									adapterUsr.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+									spinnerUsr.adapter = adapterUsr
+									if (listaUsuariosFiltrados.isNotEmpty()) {
+										spinnerUsr.setSelection(0)
+										val usrSel = listaUsuariosFiltrados[0]
+										usuarioOriginalSeleccionado = usrSel.nomUsuario
+										txtUsr.setText(usrSel.nomUsuario)
+										txtEst.setText(if (usrSel.nom_estado.equals("HABILITADO", ignoreCase = true)) "1" else "2")
+									} else {
+										usuarioOriginalSeleccionado = ""
+										txtUsr.text.clear()
+										txtPass.text.clear()
+										txtEst.text.clear()
+									}
+									spinnerUsr.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+										override fun onItemSelected(parentUsr: AdapterView<*>, viewUsr: View?, posUsr: Int, idUsr: Long) {
+											if (posUsr < listaUsuariosFiltrados.size) {
+												val usuarioSel = listaUsuariosFiltrados[posUsr]
+												usuarioOriginalSeleccionado = usuarioSel.nomUsuario
+												txtUsr.setText(usuarioSel.nomUsuario)
+												txtEst.setText(if (usuarioSel.nom_estado.equals("HABILITADO", ignoreCase = true)) "1" else "2")
+											}
+										}
+										override fun onNothingSelected(parentUsr: AdapterView<*>) {}
+									}
+								}
+							}
+							override fun onNothingSelected(parent: AdapterView<*>) {}
+						}
+					}
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@EditarUsuario, "Error al cargar datos: ${ex.message}", Toast.LENGTH_SHORT).show() } }
+		}
+	}
+	private fun ejecutarEditarUsuario(usuario: String, clave: String, idPersona: Int, idEstado: Int, oldNomUsuario: String, spinnerPer: Spinner, spinnerUsr: Spinner, txtUsr: EditText, txtPass: EditText, txtPer: EditText, txtEst: EditText) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val dto = Usuario(usuario, clave, idPersona, idEstado)
+				val respuesta = RetrofitCliente.ruta.EditarUsuario(dto, oldNomUsuario)
+				withContext(Dispatchers.Main) {
+					if (respuesta.isSuccessful) { Toast.makeText(this@EditarUsuario, "${respuesta.body()?.respuesta}: ${respuesta.body()?.mensaje}", Toast.LENGTH_LONG).show(); cargarSpinners(spinnerPer, spinnerUsr, txtUsr, txtPass, txtPer, txtEst) } else { Toast.makeText(this@EditarUsuario, "Error del servidor: ${respuesta.code()}", Toast.LENGTH_SHORT).show() }
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@EditarUsuario, "Error de red: ${ex.message}", Toast.LENGTH_LONG).show() } }
+		}
+	}
+	private fun ejecutarEliminarUsuario(usuario: String, spinnerPer: Spinner, spinnerUsr: Spinner, txtUsr: EditText, txtPass: EditText, txtPer: EditText, txtEst: EditText) {
+		CoroutineScope(Dispatchers.IO).launch {
+			try {
+				val dto = Usuario(usuario, "", 0, 0)
+				val respuesta = RetrofitCliente.ruta.EliminarUsuario(dto)
+				withContext(Dispatchers.Main) {
+					if (respuesta.isSuccessful) { Toast.makeText(this@EditarUsuario, "${respuesta.body()?.respuesta}: ${respuesta.body()?.mensaje}", Toast.LENGTH_LONG).show(); txtUsr.text.clear(); txtPass.text.clear(); cargarSpinners(spinnerPer, spinnerUsr, txtUsr, txtPass, txtPer, txtEst) } else { Toast.makeText(this@EditarUsuario, "Error del servidor: ${respuesta.code()}", Toast.LENGTH_SHORT).show() }
+				}
+			} catch (ex: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@EditarUsuario, "Error de red: ${ex.message}", Toast.LENGTH_LONG).show() } }
+		}
+	}
+}
+=== ARCHIVO: AndroidManifest.xml
+Ruta: app/src/main/AndroidManifest.xml
+Descripción: Manifiesto de la aplicación Android. Declara los permisos de Internet, el icono y todas las actividades.
+Relación: Conecta con todas las clases Activity (MainActivity, Login, IngresarUsuario, EditarPersona, EditarUsuario, etc.).
+Código:
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+	<uses-permission android:name="android.permission.INTERNET" />
+	<application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:label="@string/app_name" android:roundIcon="@mipmap/ic_launcher_round" android:supportsRtl="true" android:theme="@style/Theme.AppAPILogin" android:usesCleartextTraffic="true">
+		<activity android:name=".Login" android:exported="false" />
+		<activity android:name=".IngresarUsuario" android:exported="false" />
+		<activity android:name=".IngresarPersona" android:exported="false" />
+		<activity android:name=".ListadoUsuarios" android:exported="false" />
+		<activity android:name=".ListadoPersonas" android:exported="false" />
+		<activity android:name=".EditarPersona" android:exported="false" />
+		<activity android:name=".EditarUsuario" android:exported="false" />
+		<activity android:name=".MainActivity" android:exported="true">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
+	</application>
+</manifest>

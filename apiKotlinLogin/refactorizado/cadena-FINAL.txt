@@ -1,0 +1,7 @@
+Instalar:
+EntityFrameworkCore.SqlServer
+EntityFrameworkCore.Tools
+
+Scaffold:
+
+Scaffold-DbContext "Server=LOCAL;Database=BASEDATOS;Trusted_Connection=SSPI;MultipleActiveResultSets=true;Trust Server Certificate=true" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models

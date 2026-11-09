@@ -1,0 +1,42 @@
+Proyecto_Login_Completo_v2.zip
+├── backend_csharp/
+│   ├── API_Consultas.sln
+│   ├── API_Consultas.csproj
+│   ├── ARCHIVO.sql
+│   ├── appsettings.json
+│   ├── appsettings.Development.json
+│   ├── Program.cs
+│   ├── Controllers/
+│   │   └── ProductoController.cs
+│   └── Models/
+│       ├── ArchivoContext.cs
+│       ├── Estado.cs
+│       ├── Persona.cs
+│       ├── Usuario.cs
+│       └── UsuarioPersona.cs
+└── app_kotlin/
+    ├── build.gradle.kts
+    ├── settings.gradle.kts
+    └── app/
+        └── src/
+            └── main/
+                ├── AndroidManifest.xml
+                └── java/
+                    └── com/
+                        └── example/
+                            └── appapilogin/
+                                ├── MainActivity.kt
+                                ├── Login.kt
+                                ├── IngresarPersona.kt
+                                ├── IngresarUsuario.kt
+                                ├── ListadoPersonas.kt
+                                ├── ListadoUsuarios.kt
+                                ├── Clases/
+                                │   ├── Datos.kt
+                                │   ├── DatosUsuario.kt
+                                │   ├── Persona.kt
+                                │   └── Usuario.kt
+                                ├── Conexion/
+                                │   └── RetrofitCliente.kt
+                                └── Interfaz/
+                                    └── Funciones.kt

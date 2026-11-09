@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AGREGADO [2026-11-08 21:18]: Vista para editar y eliminar usuarios -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".EditarUsuario">
+
+    <Button
+        android:id="@+id/btnVolverEditUsuario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Volver"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvEditarUsuarioTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:text="Editar / Eliminar Usuario"
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- AGREGADO [2026-11-08 22:54]: Título descriptivo para el selector de persona -->
+    <TextView
+        android:id="@+id/tvLabelPersonaUsr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="16dp"
+        android:text="Seleccione Persona:"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvEditarUsuarioTitle" />
+
+    <!-- AGREGADO [2026-11-08 22:47]: Spinner 1 para seleccionar Persona -->
+    <Spinner
+        android:id="@+id/spinnerPersonasUsrEdit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvLabelPersonaUsr" />
+
+    <!-- AGREGADO [2026-11-08 22:54]: Título descriptivo para el selector de usuario -->
+    <TextView
+        android:id="@+id/tvLabelUsuarioUsr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="12dp"
+        android:text="Seleccione Usuario:"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinnerPersonasUsrEdit" />
+
+    <!-- AGREGADO [2026-11-08 22:47]: Spinner 2 para seleccionar Usuario filtrado por Persona -->
+    <Spinner
+        android:id="@+id/spinnerUsuariosUsrEdit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvLabelUsuarioUsr" />
+
+    <!-- AGREGADO [2026-11-09 00:23]: Se agrega android:maxLength="10" para respetar el límite estricto VARCHAR(10) de la columna NOM_USUARIO en SQL Server -->
+    <EditText
+        android:id="@+id/txtNomUsuarioEdit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="12dp"
+        android:hint="Nombre de usuario (máx 10)"
+        android:inputType="text"
+        android:maxLength="10"
+        android:focusable="true"
+        android:clickable="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinnerUsuariosUsrEdit" />
+
+    <EditText
+        android:id="@+id/txtClaveEdit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="12dp"
+        android:hint="Nueva Clave / Contraseña"
+        android:inputType="textPassword"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txtNomUsuarioEdit" />
+
+    <EditText
+        android:id="@+id/txtIdPersonaUsrEdit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="12dp"
+        android:hint="ID Persona asociada"
+        android:inputType="number"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txtClaveEdit" />
+
+    <EditText
+        android:id="@+id/txtIdEstadoUsrEdit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="12dp"
+        android:hint="ID Estado (1: Habilitado, 2: Deshabilitado)"
+        android:inputType="number"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txtIdPersonaUsrEdit" />
+
+    <Button
+        android:id="@+id/btnEditarUsuario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="20dp"
+        android:text="Editar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txtIdEstadoUsrEdit" />
+
+    <Button
+        android:id="@+id/btnEliminarUsuario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Eliminar"
+        app:layout_constraintEnd_toStartOf="@+id/btnLimpiarEditUsuario"
+        app:layout_constraintStart_toEndOf="@+id/btnEditarUsuario"
+        app:layout_constraintTop_toBottomOf="@+id/txtIdEstadoUsrEdit" />
+
+    <Button
+        android:id="@+id/btnLimpiarEditUsuario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="20dp"
+        android:text="Limpiar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txtIdEstadoUsrEdit" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

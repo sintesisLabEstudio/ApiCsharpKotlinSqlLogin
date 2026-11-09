@@ -1,0 +1,12 @@
+COPIA EN DESCARGAS LA BASE
+
+Copy-Item "C:\Program Files\Microsoft SQL Server\MSSQL17.SQLEXPRESS\MSSQL\DATA\ARCHIVO_log.ldf" "$env:USERPROFILE\Downloads\" -Force
+
+Copy-Item "C:\Program Files\Microsoft SQL Server\MSSQL17.SQLEXPRESS\MSSQL\DATA\ARCHIVO.mdf" "$env:USERPROFILE\Downloads\" -Force
+
+VISUALIZA ACTIVIDAD
+sqlcmd -S "programador\LOCALDB#FB7CFA2F" -E -Q "SET NOCOUNT ON; SELECT name, state_desc FROM sys.databases WHERE name = N'ARCHIVO';"
+
+sqllocaldb info MSSQLLocalDB
+
+sqlcmd -S "(localdb)\MSSQLLocalDB" -E -Q "SELECT name, state_desc FROM sys.databases WHERE name = N'ARCHIVO';"

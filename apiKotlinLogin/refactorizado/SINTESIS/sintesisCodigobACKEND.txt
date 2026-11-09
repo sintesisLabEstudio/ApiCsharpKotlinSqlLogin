@@ -1,0 +1,443 @@
+ARCHIVO: Program.cs
+RUTA: /Program.cs [PUNTO DE ENTRADA PRINCIPAL]
+DESCRIPCIÓN: Archivo de configuración e inicio de la aplicación ASP.NET Core. Configura servicios, middleware y establece la URL de escucha.
+REFERENCIAS A: Models/ArchivoContext.cs | appsettings.json | Models/*.cs | Controllers/ProductoController.cs
+═══════════════════════════════════════════════════════════════════════════════
+using APILogin.Models;
+using Microsoft.EntityFrameworkCore;
+namespace API_Consultas
+{
+	public class Program
+	{
+		public static void Main(string[] args)
+		{
+			// Constructor del builder: obtiene y prepara la configuración de la aplicación
+			var builder = WebApplication.CreateBuilder(args);
+			// NOTA IMPORTANTE: Configuración de Kestrel ahora en appsettings.json
+			builder.Services.AddControllers();
+			// Registra ArchivoContext con inyección de dependencias - permite usar DbContext en controladores
+			builder.Services.AddDbContext<ArchivoContext>(options =>
+				options.UseSqlServer(builder.Configuration.GetConnectionString("ConexionArchivo")));
+			builder.Services.AddEndpointsApiExplorer();
+			builder.Services.AddSwaggerGen();
+			var app = builder.Build();
+			// Habilita Swagger UI solo en desarrollo
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseSwagger();
+				app.UseSwaggerUI(c =>
+				{
+					c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
+					c.RoutePrefix = string.Empty;
+				});
+			}
+			// COMENTADO: app.UseHttpsRedirection(); (evita rechazos de peticiones HTTP desde Android)
+			app.UseAuthorization();
+			app.MapControllers();
+			// app.Run() lee la URL configurada en appsettings.json bajo Kestrel.Endpoints
+			app.Run();
+		}
+	}
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: appsettings.json
+RUTA: /appsettings.json
+DESCRIPCIÓN: Configuración centralizada de la aplicación incluyendo logging, cadena de conexión SQL Server y puertos Kestrel.
+REFERENCIAS A: Program.cs | Models/ArchivoContext.cs
+═══════════════════════════════════════════════════════════════════════════════
+{
+	"Logging": {
+		"LogLevel": {
+			"Default": "Information",
+			"Microsoft.AspNetCore": "Warning"
+		}
+	},
+	"AllowedHosts": "*",
+	"Kestrel": {
+		"Endpoints": {
+			"Http": {
+				"Url": "http://0.0.0.0:5017"
+			}
+		}
+	},
+	"ConnectionStrings": {
+		"ConexionArchivo": "Server=.\\SQLEXPRESS;Database=ARCHIVO;Trusted_Connection=SSPI;MultipleActiveResultSets=true;Trust Server Certificate=true"
+	}
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: appsettings.Development.json
+RUTA: /appsettings.Development.json
+DESCRIPCIÓN: Configuración específica para ambiente de desarrollo (overrides de appsettings.json).
+REFERENCIAS A: appsettings.json
+═══════════════════════════════════════════════════════════════════════════════
+{
+	"Logging": {
+		"LogLevel": {
+			"Default": "Information",
+			"Microsoft.AspNetCore": "Warning"
+		}
+	}
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: Models/ArchivoContext.cs
+RUTA: /Models/ArchivoContext.cs
+DESCRIPCIÓN: DbContext de Entity Framework Core que define las entidades (ESTADO, PERSONA, USUARIO) y sus relaciones. Mapea tablas de SQL Server.
+REFERENCIAS A: Models/Estado.cs | Models/Persona.cs | Models/Usuario.cs | appsettings.json | Program.cs
+═══════════════════════════════════════════════════════════════════════════════
+using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+namespace APILogin.Models;
+public partial class ArchivoContext : DbContext
+{
+	public ArchivoContext()
+	{
+	}
+	public ArchivoContext(DbContextOptions<ArchivoContext> options)
+		: base(options)
+	{
+	}
+	// Colecciones que representan las tablas principales
+	public virtual DbSet<Estado> Estados { get; set; }
+	public virtual DbSet<Persona> Personas { get; set; }
+	public virtual DbSet<Usuario> Usuarios { get; set; }
+	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+	{
+		// Solo configura la conexión si NO viene ya configurada desde Program.cs (inyección de dependencias)
+		if (!optionsBuilder.IsConfigured)
+		{
+			optionsBuilder.UseSqlServer(@"Server=.\SQLEXPRESS;Database=ARCHIVO;Trusted_Connection=SSPI;MultipleActiveResultSets=true;Trust Server Certificate=true");
+		}
+	}
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
+	{
+		// Configuración de tabla ESTADO
+		modelBuilder.Entity<Estado>(entity =>
+		{
+			entity.HasKey(e => e.IdEstado);
+			entity.ToTable("ESTADO");
+			entity.Property(e => e.IdEstado)
+				.ValueGeneratedNever()
+				.HasColumnName("ID_ESTADO");
+			entity.Property(e => e.NomEstado)
+				.HasMaxLength(20)
+				.IsUnicode(false)
+				.HasColumnName("NOM_ESTADO");
+		});
+		// Configuración de tabla PERSONA
+		modelBuilder.Entity<Persona>(entity =>
+		{
+			entity.HasKey(e => e.IdPersona);
+			entity.ToTable("PERSONA");
+			entity.Property(e => e.IdPersona).HasColumnName("ID_PERSONA");
+			entity.Property(e => e.ApePersona)
+				.HasMaxLength(30)
+				.IsUnicode(false)
+				.HasColumnName("APE_PERSONA");
+			entity.Property(e => e.Edad).HasColumnName("EDAD");
+			entity.Property(e => e.NomPersona)
+				.HasMaxLength(30)
+				.IsUnicode(false)
+				.HasColumnName("NOM_PERSONA");
+		});
+		// Configuración de tabla USUARIO con relaciones foráneas
+		modelBuilder.Entity<Usuario>(entity =>
+		{
+			entity.HasKey(e => e.NomUsuario);
+			entity.ToTable("USUARIO");
+			entity.Property(e => e.NomUsuario)
+				.HasMaxLength(10)
+				.IsUnicode(false)
+				.HasColumnName("NOM_USUARIO");
+			// Mapeo de la columna CLAVE para las credenciales
+			entity.Property(e => e.Clave)
+				.HasMaxLength(50)
+				.IsUnicode(false)
+				.HasDefaultValue("123456")
+				.HasColumnName("CLAVE");
+			entity.Property(e => e.IdEstado).HasColumnName("ID_ESTADO");
+			entity.Property(e => e.IdPersona).HasColumnName("ID_PERSONA");
+			// Relación con ESTADO: un usuario tiene un estado
+			entity.HasOne(d => d.IdEstadoNavigation).WithMany(p => p.Usuarios)
+				.HasForeignKey(d => d.IdEstado)
+				.OnDelete(DeleteBehavior.ClientSetNull)
+				.HasConstraintName("FK_USUARIO_ESTADO");
+			// Relación con PERSONA: un usuario está asociado a una persona
+			entity.HasOne(d => d.IdPersonaNavigation).WithMany(p => p.Usuarios)
+				.HasForeignKey(d => d.IdPersona)
+				.OnDelete(DeleteBehavior.ClientSetNull)
+				.HasConstraintName("FK_USUARIO_PERSONA");
+		});
+		OnModelCreatingPartial(modelBuilder);
+	}
+	partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: Models/Persona.cs
+RUTA: /Models/Persona.cs
+DESCRIPCIÓN: Entidad POCO que representa una Persona con propiedades básicas (nombre, apellido, edad) y su relación con Usuarios.
+REFERENCIAS A: Models/Usuario.cs | Models/ArchivoContext.cs
+═══════════════════════════════════════════════════════════════════════════════
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+namespace APILogin.Models;
+public partial class Persona
+{
+	public int IdPersona { get; set; }
+	public string NomPersona { get; set; } = null!;
+	public string ApePersona { get; set; } = null!;
+	public int Edad { get; set; }
+	// Colección de usuarios asociados a esta persona (ignorado en JSON para evitar circular references)
+	[JsonIgnore]
+	public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: Models/Usuario.cs
+RUTA: /Models/Usuario.cs
+DESCRIPCIÓN: Entidad POCO que representa un Usuario con credenciales (nombre, clave) y referencias a Persona y Estado. Punto central para autenticación.
+REFERENCIAS A: Models/Persona.cs | Models/Estado.cs | Models/ArchivoContext.cs
+═══════════════════════════════════════════════════════════════════════════════
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+namespace APILogin.Models;
+public partial class Usuario
+{
+	public string NomUsuario { get; set; } = null!;
+	// Propiedad Clave: almacena la contraseña de autenticación
+	public string Clave { get; set; } = null!;
+	public int IdPersona { get; set; }
+	public int IdEstado { get; set; }
+	// Propiedades de navegación (relaciones) con otros modelos
+	[JsonIgnore]
+	public virtual Estado? IdEstadoNavigation { get; set; }
+	[JsonIgnore]
+	public virtual Persona? IdPersonaNavigation { get; set; }
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: Models/Estado.cs
+RUTA: /Models/Estado.cs
+DESCRIPCIÓN: Entidad POCO que representa Estados de Usuario (HABILITADO, DESHABILITADO) con relación 1:N a Usuarios.
+REFERENCIAS A: Models/Usuario.cs | Models/ArchivoContext.cs
+═══════════════════════════════════════════════════════════════════════════════
+using System;
+using System.Collections.Generic;
+namespace APILogin.Models;
+public partial class Estado
+{
+	public int IdEstado { get; set; }
+	public string NomEstado { get; set; } = null!;
+	// Colección de usuarios que tienen este estado
+	public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: Models/UsuarioPersona.cs
+RUTA: /Models/UsuarioPersona.cs
+DESCRIPCIÓN: DTO (Data Transfer Object) que combina información de Usuario y Persona para consultas y respuestas API. Facilita integración de datos relacionados.
+REFERENCIAS A: Models/Usuario.cs | Models/Persona.cs
+═══════════════════════════════════════════════════════════════════════════════
+namespace APILogin.Models
+{
+	public class UsuarioPersona
+	{
+		public string? NomUsuario { get; set; }
+		// Concatena nombre y apellido de la persona asociada al usuario
+		public string? NombreApellido { get; set; }
+		public int Edad {  get; set; }
+		public string? Nom_estado { get; set; }
+	}
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: Controllers/ProductoController.cs
+RUTA: /Controllers/ProductoController.cs
+DESCRIPCIÓN: Controlador API que expone endpoints REST para operaciones CRUD de Usuarios, autenticación y consultas. Recibe y procesa solicitudes HTTP.
+REFERENCIAS A: Models/ArchivoContext.cs | Models/Usuario.cs | Models/UsuarioPersona.cs | Models/Persona.cs | Models/Estado.cs
+═══════════════════════════════════════════════════════════════════════════════
+[Archivo muy grande - 344 líneas: contiene métodos GET, POST, PUT, DELETE, autenticación y consultas combinadas de Usuario-Persona]
+[NOTA: Para ver el contenido completo de este archivo, ejecuta: get_files_in_project API_Consultas.csproj y luego read_file Controllers/ProductoController.cs]
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: Properties/launchSettings.json
+RUTA: /Properties/launchSettings.json
+DESCRIPCIÓN: Configuración de perfiles de ejecución para debugging y lanzamiento de la aplicación (Visual Studio y IIS Express).
+REFERENCIAS A: appsettings.json
+═══════════════════════════════════════════════════════════════════════════════
+{
+	"profiles": {
+		"API_Consultas": {
+			"commandName": "Project",
+			"launchBrowser": true,
+			"environmentVariables": {
+				"ASPNETCORE_ENVIRONMENT": "Development"
+			},
+			"applicationUrl": "http://0.0.0.0:5017"
+		},
+		"IIS Express": {
+			"commandName": "IISExpress",
+			"launchBrowser": true,
+			"environmentVariables": {
+				"ASPNETCORE_ENVIRONMENT": "Development"
+			}
+		}
+	},
+	"iisSettings": {
+		"windowsAuthentication": false,
+		"anonymousAuthentication": true,
+		"iisExpress": {
+			"applicationUrl": "http://localhost:53352/",
+			"sslPort": 44362
+		}
+	}
+}
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVO: ARCHIVO.sql
+RUTA: /ARCHIVO.sql
+DESCRIPCIÓN: Script SQL que crea la base de datos ARCHIVO con las tablas ESTADO, PERSONA y USUARIO. Incluye configuración, constraints y datos iniciales.
+REFERENCIAS A: Models/ArchivoContext.cs | appsettings.json (cadena de conexión)
+═══════════════════════════════════════════════════════════════════════════════
+USE [master]
+GO
+-- Crea la base de datos ARCHIVO en SQL Server Express
+CREATE DATABASE [ARCHIVO]
+ CONTAINMENT = NONE
+ ON PRIMARY 
+( NAME = N'ARCHIVO', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL17.SQLEXPRESS\MSSQL\DATA\ARCHIVO.mdf' , SIZE = 8192KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
+ LOG ON 
+( NAME = N'ARCHIVO_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL17.SQLEXPRESS\MSSQL\DATA\ARCHIVO_log.ldf' , SIZE = 8192KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
+ WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
+GO
+ALTER DATABASE [ARCHIVO] SET COMPATIBILITY_LEVEL = 170
+GO
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [ARCHIVO].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+GO
+-- Configuraciones de la base de datos (seguridad, recuperación, etc.)
+ALTER DATABASE [ARCHIVO] SET ANSI_NULL_DEFAULT OFF 
+ALTER DATABASE [ARCHIVO] SET ANSI_NULLS OFF 
+ALTER DATABASE [ARCHIVO] SET ANSI_PADDING OFF 
+ALTER DATABASE [ARCHIVO] SET ANSI_WARNINGS OFF 
+ALTER DATABASE [ARCHIVO] SET ARITHABORT OFF 
+ALTER DATABASE [ARCHIVO] SET AUTO_CLOSE OFF 
+ALTER DATABASE [ARCHIVO] SET AUTO_SHRINK OFF 
+ALTER DATABASE [ARCHIVO] SET AUTO_UPDATE_STATISTICS ON 
+ALTER DATABASE [ARCHIVO] SET CURSOR_CLOSE_ON_COMMIT OFF 
+ALTER DATABASE [ARCHIVO] SET CURSOR_DEFAULT GLOBAL 
+ALTER DATABASE [ARCHIVO] SET CONCAT_NULL_YIELDS_NULL OFF 
+ALTER DATABASE [ARCHIVO] SET NUMERIC_ROUNDABORT OFF 
+ALTER DATABASE [ARCHIVO] SET QUOTED_IDENTIFIER OFF 
+ALTER DATABASE [ARCHIVO] SET RECURSIVE_TRIGGERS OFF 
+ALTER DATABASE [ARCHIVO] SET DISABLE_BROKER 
+ALTER DATABASE [ARCHIVO] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+ALTER DATABASE [ARCHIVO] SET DATE_CORRELATION_OPTIMIZATION OFF 
+ALTER DATABASE [ARCHIVO] SET TRUSTWORTHY OFF 
+ALTER DATABASE [ARCHIVO] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+ALTER DATABASE [ARCHIVO] SET PARAMETERIZATION SIMPLE 
+ALTER DATABASE [ARCHIVO] SET READ_COMMITTED_SNAPSHOT OFF 
+ALTER DATABASE [ARCHIVO] SET HONOR_BROKER_PRIORITY OFF 
+ALTER DATABASE [ARCHIVO] SET RECOVERY SIMPLE 
+ALTER DATABASE [ARCHIVO] SET MULTI_USER 
+ALTER DATABASE [ARCHIVO] SET PAGE_VERIFY CHECKSUM  
+ALTER DATABASE [ARCHIVO] SET DB_CHAINING OFF 
+ALTER DATABASE [ARCHIVO] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
+ALTER DATABASE [ARCHIVO] SET TARGET_RECOVERY_TIME = 60 SECONDS 
+ALTER DATABASE [ARCHIVO] SET DELAYED_DURABILITY = DISABLED 
+ALTER DATABASE [ARCHIVO] SET OPTIMIZED_LOCKING = OFF 
+ALTER DATABASE [ARCHIVO] SET ACCELERATED_DATABASE_RECOVERY = OFF  
+ALTER DATABASE [ARCHIVO] SET QUERY_STORE = ON
+ALTER DATABASE [ARCHIVO] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 1000, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO, MAX_PLANS_PER_QUERY = 200, WAIT_STATS_CAPTURE_MODE = ON)
+GO
+USE [ARCHIVO]
+GO
+-- Tabla ESTADO: almacena estados posibles (HABILITADO, DESHABILITADO)
+CREATE TABLE [dbo].[ESTADO](
+	[ID_ESTADO] [int] NOT NULL,
+	[NOM_ESTADO] [varchar](20) NOT NULL,
+ CONSTRAINT [PK_ESTADO] PRIMARY KEY CLUSTERED 
+(
+	[ID_ESTADO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+-- Tabla PERSONA: información personal de los usuarios
+CREATE TABLE [dbo].[PERSONA](
+	[ID_PERSONA] [int] IDENTITY(1,1) NOT NULL,
+	[NOM_PERSONA] [varchar](30) NOT NULL,
+	[APE_PERSONA] [varchar](30) NOT NULL,
+	[EDAD] [int] NOT NULL,
+ CONSTRAINT [PK_PERSONA] PRIMARY KEY CLUSTERED 
+(
+	[ID_PERSONA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+-- Tabla USUARIO: autenticación y relaciones con Persona y Estado
+CREATE TABLE [dbo].[USUARIO](
+	[NOM_USUARIO] [varchar](10) NOT NULL,
+	[CLAVE] [varchar](50) NOT NULL DEFAULT '123456',
+	[ID_PERSONA] [int] NOT NULL,
+	[ID_ESTADO] [int] NOT NULL,
+ CONSTRAINT [PK_USUARIO] PRIMARY KEY CLUSTERED 
+(
+	[NOM_USUARIO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+-- Inserta estados iniciales
+INSERT [dbo].[ESTADO] ([ID_ESTADO], [NOM_ESTADO]) VALUES (1, N'HABILITADO')
+INSERT [dbo].[ESTADO] ([ID_ESTADO], [NOM_ESTADO]) VALUES (2, N'DESHABILITADO')
+GO
+-- Restricciones de clave foránea
+ALTER TABLE [dbo].[USUARIO]  WITH CHECK ADD  CONSTRAINT [FK_USUARIO_ESTADO] FOREIGN KEY([ID_ESTADO])
+REFERENCES [dbo].[ESTADO] ([ID_ESTADO])
+GO
+ALTER TABLE [dbo].[USUARIO] CHECK CONSTRAINT [FK_USUARIO_ESTADO]
+GO
+ALTER TABLE [dbo].[USUARIO]  WITH CHECK ADD  CONSTRAINT [FK_USUARIO_PERSONA] FOREIGN KEY([ID_PERSONA])
+REFERENCES [dbo].[PERSONA] ([ID_PERSONA])
+GO
+ALTER TABLE [dbo].[USUARIO] CHECK CONSTRAINT [FK_USUARIO_PERSONA]
+GO
+USE [master]
+GO
+ALTER DATABASE [ARCHIVO] SET READ_WRITE 
+GO
+═══════════════════════════════════════════════════════════════════════════════
+RESUMEN DE ESTRUCTURA DEL PROYECTO API_Consultas
+═══════════════════════════════════════════════════════════════════════════════
+CAPAS PRINCIPALES:
+	CAPA DE PRESENTACIÓN (Controllers): ProductoController.cs - Endpoints REST
+	CAPA DE DATOS (Models): Entidades POCO que mapean tablas SQL Server
+	CAPA DE ACCESO A DATOS (Context): ArchivoContext.cs - Entity Framework Core
+FLUJO DE DATOS:
+	Solicitud HTTP → ProductoController → ArchivoContext → BD ARCHIVO (SQL Server)
+ENTIDADES Y RELACIONES:
+	USUARIO (autenticación): N-1 con PERSONA | N-1 con ESTADO
+	PERSONA (datos personales): 1-N con USUARIO
+	ESTADO (control): 1-N con USUARIO
+CONFIGURACIÓN:
+	Puerto: 5017 (configurado en appsettings.json y launchSettings.json)
+	Autenticación: Credenciales en tabla USUARIO (NOM_USUARIO + CLAVE)
+	Documentación: Swagger UI en desarrollo (raíz de la aplicación)
+═══════════════════════════════════════════════════════════════════════════════
+NOTAS IMPORTANTES DE CAMBIOS RECIENTES:
+═══════════════════════════════════════════════════════════════════════════════
+[CAMBIO 1] - Resolución de excepción "Addresses IsReadOnly"
+	ARCHIVO AFECTADO: Program.cs
+	ACCIÓN: Se eliminó ConfigureKestrel() y app.Run("http://0.0.0.0:5017")
+	MOTIVO: Conflicto de configuración de direcciones de lectura en Kestrel
+	SOLUCIÓN IMPLEMENTADA: Movida configuración a appsettings.json bajo "Kestrel.Endpoints"
+	REFERENCIA: archivoContext usa bool isConfigured para protegerse de reconfiguración
+[CAMBIO 2] - Adición de propiedades para autenticación
+	ARCHIVO AFECTADO: Models/Usuario.cs + ARCHIVO.sql
+	ACCIÓN: Se agregó propiedad Clave en el modelo
+	MOTIVO: Facilita manejo de credenciales en autenticación (contraseña)
+	RESULTADO: Tabla USUARIO ahora tiene columna CLAVE con default '123456'
+[CAMBIO 3] - Centralización de configuración de conexión
+	ARCHIVO AFECTADO: appsettings.json + Models/ArchivoContext.cs
+	ACCIÓN: ConnectionStrings agregada en appsettings.json
+	MOTIVO: Mejor organización de secrets y configuración ambiental
+	PROTOCOLO: OnConfiguring valida !optionsBuilder.IsConfigured antes de autoconfigurar
+═══════════════════════════════════════════════════════════════════════════════
